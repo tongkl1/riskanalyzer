@@ -189,41 +189,54 @@ class CSMARDataFetcher(BaseDataFetcher):
         拉取所有股票的财务数据
         由于国泰安的土豆服务器连接质量堪忧, 这个函数比对每只股票都运行一次fetch()快很多
         '''
-        balance_sheet = self.download_data('FS_Combas', self.balance_sheet_fields, 'Stkcd=002001')
-        balance_sheet = balance_sheet.loc[balance_sheet['Typrep'] == 'A']
-        balance_sheet['Accper'] = pd.to_datetime(balance_sheet['Accper'])
-        balance_sheet = balance_sheet.replace([None], 0).replace(np.nan, 0)
-        balance_sheet['A002126000'] += balance_sheet['A002127000']
+        if not os.path.exists(os.path.join('datafetcher', self.temp_data_path)):
+            os.makedirs(os.path.join('datafetcher', self.temp_data_path))
 
+        if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'balance_sheet.pickle')):
+            balance_sheet = pd.read_pickle(os.path.join('datafetcher', self.temp_data_path, 'balance_sheet.pickle'))
+        else:
+            balance_sheet = self.download_data('FS_Combas', self.balance_sheet_fields)
+            balance_sheet = balance_sheet.loc[balance_sheet['Typrep'] == 'A']
+            balance_sheet['Accper'] = pd.to_datetime(balance_sheet['Accper'])
+            balance_sheet = balance_sheet.replace([None], 0).replace(np.nan, 0)
+            balance_sheet['A002126000'] += balance_sheet['A002127000']
+            balance_sheet.to_pickle(os.path.join('datafetcher', self.temp_data_path, 'balance_sheet.pickle'))
+
+        code_list = set([x[0] for x in SheetTracker.objects.all().values_list('code')])
         now = datetime.now()
         entry_list = []
         to_update = set()
         update_list = []
+        bar = tqdm(desc='Process Progress', total=balance_sheet.shape[0])
+        code_date_list = set([(x[0], x[1]) for x in BalanceSheet.objects.all().values_list('code', 'date')])
         for _, row in balance_sheet.iterrows():
             code = row['Stkcd']
             date = row['Accper']
-            if not BalanceSheet.objects.filter(code=code, date=date).exists():
-                mapping = dict()
-                for k, v in self.balance_sheet_mapping.items():
-                    mapping[k] = row[v]
-                entry = BalanceSheet(**mapping)
+            bar.update(1)
+            if code in code_list and (code, date) not in code_date_list:
+                entry = BalanceSheet(**{k : row[v] for k, v in self.balance_sheet_mapping.items()})
                 entry_list.append(entry)
                 to_update.add(code)
         
+        bar.close()
+        print('Updating database')
         if len(entry_list) > 0:
-            BalanceSheet.objects.bulk_create(entry_list)
+            BalanceSheet.objects.bulk_create(entry_list, batch_size=10000)
         
-        balance_sheet = balance_sheet.sort_values(by=['Stkcd', 'Accper']).set_index('Stkcd')
+        balance_sheet = balance_sheet.sort_values(by=['Stkcd', 'Accper']).groupby('Stkcd').last()['Accper']
         if len(to_update) > 0:
             for item in to_update:
                 try:
                     obj = SheetTracker.objects.get(pk=item)
-                    obj.last_update = now
-                    obj.last_accounting_period = make_aware(balance_sheet.loc[item]['Accper'].iloc[-1])
+                    obj.last_update = make_aware(now)
+                    obj.last_accounting_period = make_aware(balance_sheet.loc[item])
                     update_list.append(obj)
                 except:
                     pass
-        SheetTracker.objects.bulk_update(update_list, ['last_update', 'last_accounting_period'])
+        SheetTracker.objects.bulk_update(update_list, ['last_update', 'last_accounting_period'], batch_size=10000)
+
+        if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'balance_sheet.pickle')):
+            os.remove(os.path.join('datafetcher', self.temp_data_path, 'balance_sheet.pickle'))
 
     @staticmethod
     def time_delta(currentDate: str, days: int) -> str:

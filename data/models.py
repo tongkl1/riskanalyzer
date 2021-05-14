@@ -2,9 +2,9 @@ from django.db import models
 
 class BalanceSheet(models.Model):
     # 证券代码
-    code = models.CharField(max_length=64)
+    code = models.CharField(max_length=64, db_index=True)
     # 会计期间
-    date = models.DateField()
+    date = models.DateField(db_index=True)
     # 货币资金
     cash_equivalent = models.DecimalField(max_digits=20, decimal_places=3, default=0)
     # 其中:客户资金存款
@@ -134,7 +134,7 @@ class BalanceSheet(models.Model):
     # 向中央银行借款
     borrowings_from_central_bank = models.DecimalField(max_digits=20, decimal_places=3, default=0)
     # 吸收存款及同业存放
-    customer_bank_deposits_and_due_to_banks_and_other_financial_institutions = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    customer_bank_deposits_and_due_to_banks = models.DecimalField(max_digits=20, decimal_places=3, default=0)
     # 其中: 同业及其他金融机构存放款项
     due_to_banks_and_other_financial_institutions = models.DecimalField(max_digits=20, decimal_places=3, default=0)
     # 其中: 吸收存款
@@ -257,86 +257,154 @@ class BalanceSheet(models.Model):
     def __str__(self):
         return self.code + "@" + str(self.date)
 
-# class IncomeSheet(models.Model):
-#     # 证券代码
-#     code = models.CharField(max_length=64)
-#     # 会计期间
-#     date = models.DateField()
-#     # 营业总收入
-#     #   营业收入
-#     #   利息净收入 (金融类公司)
-#     #     利息收入
-#     #     - 利息支出
-#     #   已赚保费
-#     #   保险业务收入
-#     #   其中: 分保费收入
-#     #     - 分出保费
-#     #     - 提取未到期责任准备金
-#     #   手续费及佣金净收入
-#     #     其中: 代理买卖证券业务净收入
-#     #     其中: 证券承销业务净收入
-#     #     其中: 受托客户资产管理业务净收入
-#     #     手续费及佣金收入
-#     #     - 手续费及佣金支出
-#     #   其他业务收入
-#     # 营业总成本
-#     #   营业成本
-#     #   退保金
-#     #   赔付支出净额
-#     #   赔付支出
-#     #   减: 摊回赔付支出
-#     #   提取保险责任准备金净额
-#     #   提取保险责任准备金
-#     #   减: 摊回保险责任准备金
-#     #   保单红利支出
-#     #   分保费用
-#     #   研发费用
-#     #   营业税金及附加
-#     #   业务及管理费
-#     #   减: 摊回分保费用
-#     #   销售费用
-#     #   管理费用
-#     #   财务费用
-#     #     其中: 利息费用
-#     #     其中: 利息收入
-#     # 资产减值损失
-#     # 其他业务成本
-#     # 公允价值变动收益
-#     # 投资收益
-#     # 其中: 对联营企业和合营企业的投资收益
-#     # 汇兑收益
-#     # 其他业务利润
-#     # 营业利润
-#     # 营业外收入
-#     # 其中: 非流动资产处置利得
-#     # 营业外支出
-#     # 其中: 非流动资产处置净损益
-#     # 其中: 非流动资产处置损失
-#     # 利润总额
-#     # 所得税费用
-#     # 未确认的投资损失
-#     # 影响净利润的其他项目
-#     # 净利润
-#     # 归属于母公司所有者的净利润
-#     # 少数股东损益
-#     # 基本每股收益
-#     # 稀释每股收益
-#     # 其他综合收益(损失)
-#     # 综合收益总额
-#     # 归属于母公司所有者的综合收益
-#     # 归属少数股东的综合收益
-#     # 其他收益
-#     # 其中: 以摊余成本计量的金融资产终止确认收益
-#     # 净敞口套期收益
-#     # 信用减值损失
-#     # 资产处置收益
-#     # 归属于母公司其他权益工具持有者的净利润
+class IncomeSheet(models.Model):
+    # 证券代码
+    code = models.CharField(max_length=64, db_index=True)
+    # 会计期间
+    date = models.DateField(db_index=True)
+    # 营业总收入
+    total_revenue = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   营业收入
+    operating_revenue = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   利息净收入 (金融类公司)
+    net_interest_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #     利息收入
+    interest_income_fin = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #     - 利息支出
+    interest_expenses_fin = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   已赚保费
+    earned_premium = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   保险业务收入
+    income_from_insurance_business = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   其中: 分保费收入
+    reinsurance_premium_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #     - 分出保费
+    reinsurance_premium_ceded = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #     - 提取未到期责任准备金
+    appropriation_of_deposit_for_undue_duty = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   手续费及佣金净收入
+    net_fee_and_commission_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #     其中: 代理买卖证券业务净收入
+    net_securities_trading_agency_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #     其中: 证券承销业务净收入
+    net_securities_underwriting_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #     其中: 受托客户资产管理业务净收入
+    net_trusted_customer_asset_management_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #     手续费及佣金收入
+    fee_and_commission_revenue = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #     - 手续费及佣金支出
+    fee_and_commission_expenses = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   其他业务收入
+    other_operating_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 营业总成本
+    total_operating_cost = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   营业成本
+    cost_of_goods_sold = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   退保金
+    refunded_premiums = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   赔付支出净额
+    net_claims_paid = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   赔付支出
+    claims_paid = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   减: 摊回赔付支出
+    reinsurers_share_of_claims_paid = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   提取保险责任准备金净额
+    net_appropriation_of_deposit_for_duty = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   提取保险责任准备金
+    appropriation_of_deposit_for_duty = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   减: 摊回保险责任准备金
+    amortized_appropriation_of_deposit_for_duty = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   保单红利支出
+    policyholder_dividend_expense = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   分保费用
+    reinsurance_expenses = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   研发费用
+    research_and_development_expenses = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   营业税金及附加
+    sales_tax_and_extra_charges = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   业务及管理费
+    sales_and_management_expenses = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   减: 摊回分保费用
+    refund_of_reinsurance_premium_ceded = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   销售费用
+    marketing_expenses = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   管理费用
+    administrative_expenses = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #   财务费用
+    financing_costs = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #     其中: 利息费用
+    interest_expenses = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    #     其中: 利息收入
+    interest_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 资产减值损失
+    depreciation_expense = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 其他业务成本
+    cost_of_other_operations = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 公允价值变动收益
+    income_from_changes_in_fair_value = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 投资收益
+    investment_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 汇兑收益
+    gain_on_exchange = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 其他业务利润
+    income_from_other_operations = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 营业利润
+    operating_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 营业外收入
+    non_operating_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 其中: 非流动资产处置利得
+    gain_from_disposal_of_non_current_assets = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 营业外支出
+    non_operating_expenses = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 其中: 非流动资产处置净损益
+    net_gain_from_disposal_of_non_current_assets = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 其中: 非流动资产处置损失
+    loss_from_disposal_of_non_current_assets = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 利润总额
+    income_before_tax = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 所得税费用
+    income_tax_expense = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 未确认的投资损失
+    unrealized_investment_loss = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 影响净利润的其他项目
+    other_subjects_affecting_net_profit = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 净利润
+    net_profit = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 归属于母公司所有者的净利润
+    net_income_attributable_to_shareholders = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 少数股东损益
+    gains_losses_attributable_to_minority_interests = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 基本每股收益
+    basic_earnings_per_share = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 稀释每股收益
+    diluted_earnings_per_share = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 其他综合收益(损失)
+    other_comprehensive_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 综合收益总额
+    accumulated_other_comprehensive_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 归属于母公司所有者的综合收益
+    aoci_attributable_to_shareholders = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 归属少数股东的综合收益
+    aoci_attributable_to_minority = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 其他收益
+    other_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 净敞口套期收益
+    net_exposure_hedging_income = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 信用减值损失
+    credit_devaluation_loss = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 资产处置收益
+    gain_from_non_currunt_assets_disposal = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 归属于母公司其他权益工具持有者的净利润
+    net_income_to_other_equity_instruments_holder = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+
+    def __str__(self):
+        return self.code + "@" + str(self.date)
 
 # class CashflowSheet(models.Model):
 #     # 证券代码
-#     code = models.CharField(max_length=64)
+#     code = models.CharField(max_length=64, db_index=True)
 #     # 会计期间
-#     date = models.DateField()
+#     date = models.DateField(db_index=True)
 #     # 销售商品、提供劳务收到的现金
 #     # 客户存款和同业存放款项净增加额
 #     # 向中央银行借款净增加额
@@ -415,3 +483,6 @@ class BalanceSheet(models.Model):
 #     # 现金等价物的期初余额
 #     # 现金及现金等价物净增加额
 #     # 信用减值损失
+
+#    def __str__(self):
+#        return self.code + "@" + str(self.date)

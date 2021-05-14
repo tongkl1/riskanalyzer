@@ -25,6 +25,8 @@ SECRET_KEY = 'lifrjw_&75u4nvou!gzm9!&x*nq5cz)ld-h9t%x*#1umn+#dh('
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 ALLOWED_HOSTS = []
 
 
@@ -77,8 +79,13 @@ WSGI_APPLICATION = 'riskanalyzer.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'riskanalyzer',
+        'USER': 'riskanalyzeruser',
+        'PASSWORD': '123456',
+        'HOST': 'localhost',
+        'PORT': '3306',
+        'OPTIONS': {'charset':'utf8mb4'},
     }
 }
 
