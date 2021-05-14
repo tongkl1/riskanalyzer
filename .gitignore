@@ -1,0 +1,15 @@
+__pycache__
+
+migrations
+
+/reference
+
+# csmar-api temp file
+/csmar-log.log
+/token.txt
+
+# temp download file
+/datafetcher/temp
+
+# test database
+db.sqlite3
