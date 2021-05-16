@@ -11,7 +11,7 @@ import warnings
 from .BaseDataFetcher import BaseDataFetcher
 from .models import SheetTracker
 from api.csmarapi.CsmarService import CsmarService
-from data.models import BalanceSheet
+from data.models import BalanceSheet, IncomeSheet, CashflowSheetDirect, CashflowSheetIndirect
 
 class CSMARDataFetcher(BaseDataFetcher):
     # 静默未来版本警告, 该警告来源于NumPy的bug
@@ -29,6 +29,12 @@ class CSMARDataFetcher(BaseDataFetcher):
     temp_data_path = 'temp'
     balance_sheet_fields = None
     balance_sheet_mapping = None
+    income_sheet_fields = None
+    income_sheet_mapping = None
+    cashflow_sheet_fields = None
+    cashflow_sheet_mapping = None
+    cashflow_sheet_indirect_fields = None
+    cashflow_sheet_indirect_mapping = None
 
     def __init__(self):
         super().__init__()
@@ -39,6 +45,18 @@ class CSMARDataFetcher(BaseDataFetcher):
                 CSMARDataFetcher.balance_sheet_fields = f.read().split(',')
             with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config', 'balance_sheet_mapping.txt')) as f:
                 CSMARDataFetcher.balance_sheet_mapping = {x[0] : x[1] for x in [y.strip().split(',') for y in f.readlines()]}
+            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config', 'income_sheet_fields.txt')) as f:
+                CSMARDataFetcher.income_sheet_fields = f.read().split(',')
+            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config', 'income_sheet_mapping.txt')) as f:
+                CSMARDataFetcher.income_sheet_mapping = {x[0] : x[1] for x in [y.strip().split(',') for y in f.readlines()]}
+            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config', 'cashflow_sheet_fields.txt')) as f:
+                CSMARDataFetcher.cashflow_sheet_fields = f.read().split(',')
+            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config', 'cashflow_sheet_mapping.txt')) as f:
+                CSMARDataFetcher.cashflow_sheet_mapping = {x[0] : x[1] for x in [y.strip().split(',') for y in f.readlines()]}
+            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config', 'cashflow_sheet_indirect_fields.txt')) as f:
+                CSMARDataFetcher.cashflow_sheet_indirect_fields = f.read().split(',')
+            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'config', 'cashflow_sheet_indirect_mapping.txt')) as f:
+                CSMARDataFetcher.cashflow_sheet_indirect_mapping = {x[0] : x[1] for x in [y.strip().split(',') for y in f.readlines()]}
         CSMARDataFetcher.connection_count += 1
         self.end_date = datetime.now().strftime('%Y-%m-%d')
         self.start_date = '1980-01-01'
@@ -52,6 +70,12 @@ class CSMARDataFetcher(BaseDataFetcher):
             CSMARDataFetcher.login = False
             CSMARDataFetcher.balance_sheet_fields = None
             CSMARDataFetcher.balance_sheet_mapping = None
+            CSMARDataFetcher.income_sheet_fields = None
+            CSMARDataFetcher.income_sheet_mapping = None
+            CSMARDataFetcher.cashflow_sheet_fields = None
+            CSMARDataFetcher.cashflow_sheet_mapping = None
+            CSMARDataFetcher.cashflow_sheet_indirect_fields = None
+            CSMARDataFetcher.cashflow_sheet_indirect_mapping = None
 
     def download_data(self, table_name : str, field_list : str, condition : str = '') -> pd.DataFrame:
         if not self.login:
@@ -153,10 +177,14 @@ class CSMARDataFetcher(BaseDataFetcher):
     def fetch(self, code: str):
         '''
         拉取指定代码的股票的财务数据
+
         Parameters:
         - code : str, 证券代码
         '''
-        balance_sheet = self.download_data('FS_Combas', self.balance_sheet_fields, 'Stkcd=' + code)
+
+        print('Fetching Balance Sheets')
+
+        balance_sheet = self.download_data('FS_Combas', self.balance_sheet_fields, 'Typrep="A" and Stkcd=' + code)
         balance_sheet = balance_sheet.loc[balance_sheet['Typrep'] == 'A']
         balance_sheet['Accper'] = pd.to_datetime(balance_sheet['Accper'])
         balance_sheet = balance_sheet.replace([None], 0).replace(np.nan, 0)
@@ -171,14 +199,74 @@ class CSMARDataFetcher(BaseDataFetcher):
                     mapping[k] = row[v]
                 entry = BalanceSheet(**mapping)
                 entry_list.append(entry)
-        
+
         if len(entry_list) > 0:
             BalanceSheet.objects.bulk_create(entry_list)
-        
+
+        print('Fetching Income Sheets')
+
+        income_sheet = self.download_data('FS_Comins', self.income_sheet_fields, 'Typrep="A" and Stkcd=' + code)
+        income_sheet = income_sheet.loc[income_sheet['Typrep'] == 'A']
+        income_sheet['Accper'] = pd.to_datetime(income_sheet['Accper'])
+        income_sheet = income_sheet.replace([None], 0).replace(np.nan, 0)
+
+        entry_list = []
+        for _, row in income_sheet.iterrows():
+            date = row['Accper']
+            if not IncomeSheet.objects.filter(code=code, date=date).exists():
+                mapping = dict()
+                for k, v in self.income_sheet_mapping.items():
+                    mapping[k] = row[v]
+                entry = IncomeSheet(**mapping)
+                entry_list.append(entry)
+
+        if len(entry_list) > 0:
+            IncomeSheet.objects.bulk_create(entry_list)
+
+        print('Fetching Cashflow Statements')
+
+        cashflow_sheet = self.download_data('FS_Comscfd', self.cashflow_sheet_fields, 'Typrep="A" and Stkcd=' + code)
+        cashflow_sheet = cashflow_sheet.loc[cashflow_sheet['Typrep'] == 'A']
+        cashflow_sheet['Accper'] = pd.to_datetime(cashflow_sheet['Accper'])
+        cashflow_sheet = cashflow_sheet.replace([None], 0).replace(np.nan, 0)
+
+        entry_list = []
+        for _, row in cashflow_sheet.iterrows():
+            date = row['Accper']
+            if not CashflowSheetDirect.objects.filter(code=code, date=date).exists():
+                mapping = dict()
+                for k, v in self.cashflow_sheet_mapping.items():
+                    mapping[k] = row[v]
+                entry = CashflowSheetDirect(**mapping)
+                entry_list.append(entry)
+
+        if len(entry_list) > 0:
+            CashflowSheetDirect.objects.bulk_create(entry_list)
+
+        print('Fetching Indirect Cashflow Statements')
+
+        cashflow_sheet_indirect = self.download_data('FS_Comscfi', self.cashflow_sheet_indirect_fields, 'Typrep="A" and Stkcd=' + code)
+        cashflow_sheet_indirect = cashflow_sheet_indirect.loc[cashflow_sheet_indirect['Typrep'] == 'A']
+        cashflow_sheet_indirect['Accper'] = pd.to_datetime(cashflow_sheet_indirect['Accper'])
+        cashflow_sheet_indirect = cashflow_sheet_indirect.replace([None], 0).replace(np.nan, 0)
+
+        entry_list = []
+        for _, row in cashflow_sheet_indirect.iterrows():
+            date = row['Accper']
+            if not CashflowSheetIndirect.objects.filter(code=code, date=date).exists():
+                mapping = dict()
+                for k, v in self.cashflow_sheet_indirect_mapping.items():
+                    mapping[k] = row[v]
+                entry = CashflowSheetIndirect(**mapping)
+                entry_list.append(entry)
+
+        if len(entry_list) > 0:
+            CashflowSheetIndirect.objects.bulk_create(entry_list)
+
         # 更新SheetTracker的信息
         try:
             to_update = SheetTracker.objects.get(pk=code)
-            to_update.last_update = datetime.now()
+            to_update.last_update = make_aware(datetime.now())
             to_update.last_accounting_period = balance_sheet['Accper'].iloc[-1]
             to_update.save()
         except:
@@ -187,19 +275,22 @@ class CSMARDataFetcher(BaseDataFetcher):
     def fetch_all(self):
         '''
         拉取所有股票的财务数据
+
         由于国泰安的土豆服务器连接质量堪忧, 这个函数比对每只股票都运行一次fetch()快很多
         '''
         if not os.path.exists(os.path.join('datafetcher', self.temp_data_path)):
             os.makedirs(os.path.join('datafetcher', self.temp_data_path))
 
+        print('Fetching Balance Sheets')
+
         if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'balance_sheet.pickle')):
             balance_sheet = pd.read_pickle(os.path.join('datafetcher', self.temp_data_path, 'balance_sheet.pickle'))
         else:
-            balance_sheet = self.download_data('FS_Combas', self.balance_sheet_fields)
-            balance_sheet = balance_sheet.loc[balance_sheet['Typrep'] == 'A']
+            balance_sheet = self.download_data('FS_Combas', self.balance_sheet_fields, 'Typrep="A"')
+            balance_sheet = balance_sheet.loc[balance_sheet['Typrep'] == 'A'] # 再次确保没有母公司报表混入
             balance_sheet['Accper'] = pd.to_datetime(balance_sheet['Accper'])
             balance_sheet = balance_sheet.replace([None], 0).replace(np.nan, 0)
-            balance_sheet['A002126000'] += balance_sheet['A002127000']
+            balance_sheet['A002126000'] += balance_sheet['A002127000'] # 处理国泰安的一项录入错误
             balance_sheet.to_pickle(os.path.join('datafetcher', self.temp_data_path, 'balance_sheet.pickle'))
 
         code_list = set([x[0] for x in SheetTracker.objects.all().values_list('code')])
@@ -217,19 +308,107 @@ class CSMARDataFetcher(BaseDataFetcher):
                 entry = BalanceSheet(**{k : row[v] for k, v in self.balance_sheet_mapping.items()})
                 entry_list.append(entry)
                 to_update.add(code)
-        
+
         bar.close()
         print('Updating database')
         if len(entry_list) > 0:
             BalanceSheet.objects.bulk_create(entry_list, batch_size=10000)
-        
+
+
+        print('Fetching Income Sheets')
+
+        if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'income_sheet.pickle')):
+            income_sheet = pd.read_pickle(os.path.join('datafetcher', self.temp_data_path, 'income_sheet.pickle'))
+        else:
+            income_sheet = self.download_data('FS_Comins', self.income_sheet_fields, 'Typrep="A"')
+            income_sheet = income_sheet.loc[income_sheet['Typrep'] == 'A'] # 再次确保没有母公司报表混入
+            income_sheet['Accper'] = pd.to_datetime(income_sheet['Accper'])
+            income_sheet = income_sheet.replace([None], 0).replace(np.nan, 0)
+            income_sheet.to_pickle(os.path.join('datafetcher', self.temp_data_path, 'income_sheet.pickle'))
+
+        code_list = set([x[0] for x in SheetTracker.objects.all().values_list('code')])
+        entry_list = []
+        bar = tqdm(desc='Process Progress', total=income_sheet.shape[0])
+        code_date_list = set([(x[0], x[1]) for x in IncomeSheet.objects.all().values_list('code', 'date')])
+        for _, row in income_sheet.iterrows():
+            code = row['Stkcd']
+            date = row['Accper']
+            bar.update(1)
+            if code in code_list and (code, date) not in code_date_list:
+                entry = IncomeSheet(**{k : row[v] for k, v in self.income_sheet_mapping.items()})
+                entry_list.append(entry)
+                to_update.add(code)
+
+        bar.close()
+        print('Updating database')
+        if len(entry_list) > 0:
+            IncomeSheet.objects.bulk_create(entry_list, batch_size=10000)
+
+        print('Fetching Cashflow Statements')
+
+        if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet.pickle')):
+            cashflow_sheet = pd.read_pickle(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet.pickle'))
+        else:
+            cashflow_sheet = self.download_data('FS_Comscfd', self.cashflow_sheet_fields, 'Typrep="A"')
+            cashflow_sheet = cashflow_sheet.loc[cashflow_sheet['Typrep'] == 'A'] # 再次确保没有母公司报表混入
+            cashflow_sheet['Accper'] = pd.to_datetime(cashflow_sheet['Accper'])
+            cashflow_sheet = cashflow_sheet.replace([None], 0).replace(np.nan, 0)
+            cashflow_sheet.to_pickle(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet.pickle'))
+
+        code_list = set([x[0] for x in SheetTracker.objects.all().values_list('code')])
+        entry_list = []
+        bar = tqdm(desc='Process Progress', total=cashflow_sheet.shape[0])
+        code_date_list = set([(x[0], x[1]) for x in CashflowSheetDirect.objects.all().values_list('code', 'date')])
+        for _, row in cashflow_sheet.iterrows():
+            code = row['Stkcd']
+            date = row['Accper']
+            bar.update(1)
+            if code in code_list and (code, date) not in code_date_list:
+                entry = CashflowSheetDirect(**{k : row[v] for k, v in self.cashflow_sheet_mapping.items()})
+                entry_list.append(entry)
+                to_update.add(code)
+
+        bar.close()
+        print('Updating database')
+        if len(entry_list) > 0:
+            CashflowSheetDirect.objects.bulk_create(entry_list, batch_size=10000)
+
+        print('Fetching Indirect Cashflow Statements')
+
+        if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet_indirect.pickle')):
+            cashflow_sheet_indirect = pd.read_pickle(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet_indirect.pickle'))
+        else:
+            cashflow_sheet_indirect = self.download_data('FS_Comscfi', self.cashflow_sheet_indirect_fields, 'Typrep="A"')
+            cashflow_sheet_indirect = cashflow_sheet_indirect.loc[cashflow_sheet_indirect['Typrep'] == 'A'] # 再次确保没有母公司报表混入
+            cashflow_sheet_indirect['Accper'] = pd.to_datetime(cashflow_sheet_indirect['Accper'])
+            cashflow_sheet_indirect = cashflow_sheet_indirect.replace([None], 0).replace(np.nan, 0)
+            cashflow_sheet_indirect.to_pickle(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet_indirect.pickle'))
+
+        code_list = set([x[0] for x in SheetTracker.objects.all().values_list('code')])
+        entry_list = []
+        bar = tqdm(desc='Process Progress', total=cashflow_sheet_indirect.shape[0])
+        code_date_list = set([(x[0], x[1]) for x in CashflowSheetIndirect.objects.all().values_list('code', 'date')])
+        for _, row in cashflow_sheet_indirect.iterrows():
+            code = row['Stkcd']
+            date = row['Accper']
+            bar.update(1)
+            if code in code_list and (code, date) not in code_date_list:
+                entry = CashflowSheetIndirect(**{k : row[v] for k, v in self.cashflow_sheet_indirect_mapping.items()})
+                entry_list.append(entry)
+                to_update.add(code)
+
+        bar.close()
+        print('Updating database')
+        if len(entry_list) > 0:
+            CashflowSheetIndirect.objects.bulk_create(entry_list, batch_size=10000)
+
         balance_sheet = balance_sheet.sort_values(by=['Stkcd', 'Accper']).groupby('Stkcd').last()['Accper']
         if len(to_update) > 0:
             for item in to_update:
                 try:
                     obj = SheetTracker.objects.get(pk=item)
                     obj.last_update = make_aware(now)
-                    obj.last_accounting_period = make_aware(balance_sheet.loc[item])
+                    obj.last_accounting_period = balance_sheet.loc[item]
                     update_list.append(obj)
                 except:
                     pass
@@ -237,6 +416,12 @@ class CSMARDataFetcher(BaseDataFetcher):
 
         if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'balance_sheet.pickle')):
             os.remove(os.path.join('datafetcher', self.temp_data_path, 'balance_sheet.pickle'))
+        if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'income_sheet.pickle')):
+            os.remove(os.path.join('datafetcher', self.temp_data_path, 'income_sheet.pickle'))
+        if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet.pickle')):
+            os.remove(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet.pickle'))
+        if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet_indirect.pickle')):
+            os.remove(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet_indirect.pickle'))
 
     @staticmethod
     def time_delta(currentDate: str, days: int) -> str:

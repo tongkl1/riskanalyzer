@@ -400,89 +400,174 @@ class IncomeSheet(models.Model):
     def __str__(self):
         return self.code + "@" + str(self.date)
 
-# class CashflowSheet(models.Model):
-#     # 证券代码
-#     code = models.CharField(max_length=64, db_index=True)
-#     # 会计期间
-#     date = models.DateField(db_index=True)
-#     # 销售商品、提供劳务收到的现金
-#     # 客户存款和同业存放款项净增加额
-#     # 向中央银行借款净增加额
-#     # 向其他金融机构拆入资金净增加额
-#     # 收到原保险合同保费取得的现金
-#     # 收到再保险业务现金净额
-#     # 保户储金及投资款净增加额
-#     # 处置交易性金融资产净增加额
-#     # 收取利息、手续费及佣金的现金
-#     # 拆入资金净增加额
-#     # 回购业务资金净增加额
-#     # 收到的税费返还
-#     # 收到的其他与经营活动有关的现金
-#     # 购买商品、接受劳务支付的现金
-#     # 客户贷款及垫款净增加额
-#     # 存放中央银行和同业款项净增加额
-#     # 支付原保险合同赔付款项的现金
-#     # 支付利息、手续费及佣金的现金
-#     # 支付保单红利的现金
-#     # 支付给职工以及为职工支付的现金
-#     # 支付的各项税费
-#     # 支付其他与经营活动有关的现金
-#     # 经营活动产生的现金流量净额
-#     # 收回投资收到的现金
-#     # 取得投资收益收到的现金
-#     # 处置固定资产、无形资产和其他长期资产收回的现金净额
-#     # 处置子公司及其他营业单位收到的现金净额
-#     # 收到的其他与投资活动有关的现金
-#     # 购建固定资产、无形资产和其他长期资产支付的现金
-#     # 投资支付的现金
-#     # 质押贷款净增加额
-#     # 取得子公司及其他营业单位支付的现金净额
-#     # 支付其他与投资活动有关的现金
-#     # 投资活动产生的现金流量净额
-#     # 吸收投资收到的现金
-#     # 吸收权益性投资收到的现金
-#     # 其中: 子公司吸收少数股东投资收到的现金
-#     # 发行债券收到的现金
-#     # 取得借款收到的现金
-#     # 收到其他与筹资活动有关的现金
-#     # 偿还债务支付的现金
-#     # 分配股利、利润或偿付利息支付的现金
-#     # 其中: 子公司支付给少数股东的股利、利润
-#     # 支付其他与筹资活动有关的现金
-#     # 筹资活动产生的现金流量净额
-#     # 汇率变动对现金及现金等价物的影响
-#     # 其他对现金的影响
-#     # 现金及现金等价物净增加额
-#     # 期初现金及现金等价物余额
-#     # 期末现金及现金等价物余额
+class CashflowSheetDirect(models.Model):
+    # 证券代码
+    code = models.CharField(max_length=64, db_index=True)
+    # 会计期间
+    date = models.DateField(db_index=True)
+    # 销售商品、提供劳务收到的现金
+    cash_receipts_from_customers = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 客户存款和同业存放款项净增加额
+    net_gains_of_customer_deposits_and_due_to_banks = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 向中央银行借款净增加额
+    net_gains_of_borrowings_from_central_bank = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 向其他金融机构拆入资金净增加额
+    net_gains_of_loans_from_other_banks = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 收到原保险合同保费取得的现金
+    cash_from_receiving_insurance_premium = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 收到再保险业务现金净额
+    net_cash_from_reinsurance_business = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 保户储金及投资款净增加额
+    net_gains_of_deposits_from_policyholders = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 处置交易性金融资产净增加额
+    net_gains_of_disposal_of_tradable_financial_assets = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 收取利息、手续费及佣金的现金
+    cash_received_from_interests_fees_and_commissions = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 拆入资金净增加额
+    net_gains_of_loans_from_other_banks2 = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 回购业务资金净增加额
+    net_gains_of_repurchase_business_capital = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 收到的税费返还
+    refund_of_taxes_and_surcharges = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 收到的其他与经营活动有关的现金
+    cash_received_from_other_operating_activities = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 购买商品、接受劳务支付的现金
+    cash_paid_for_goods_and_services = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 客户贷款及垫款净增加额
+    net_gains_of_loans_and_advances_to_customers = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 存放中央银行和同业款项净增加额
+    net_gains_of_deposits_in_central_bank_and_other_banks = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 支付原保险合同赔付款项的现金
+    cash_paid_for_indemnity = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 支付利息、手续费及佣金的现金
+    cash_paid_for_interests_fees_commissions = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 支付保单红利的现金
+    cash_paid_for_policy_dividends = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 支付给职工以及为职工支付的现金
+    cash_paid_to_and_on_behalf_of_employees = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 支付的各项税费
+    cash_paid_for_taxes = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 支付其他与经营活动有关的现金
+    cash_paid_related_to_other_operating_activities = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 经营活动产生的现金流量净额
+    cashflow_from_operating_activities = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 收回投资收到的现金
+    cash_received_from_disposal_of_investments = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 取得投资收益收到的现金
+    cash_received_from_gain_of_investment_revenue = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 处置固定资产、无形资产和其他长期资产收回的现金净额
+    cash_from_disposal_of_fixed_intangible_other_assets = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 处置子公司及其他营业单位收到的现金净额
+    cash_from_disposal_of_subsidiaries = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 收到的其他与投资活动有关的现金
+    cash_received_related_to_other_investing_activities = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 购建固定资产、无形资产和其他长期资产支付的现金
+    cash_to_acquire_fixed_intangible_and_other_assets = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 投资支付的现金
+    cash_paid_to_acquire_investments = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 质押贷款净增加额
+    net_gains_of_pledge_loans = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 取得子公司及其他营业单位支付的现金净额
+    cash_to_acquire_subsidiaries = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 支付其他与投资活动有关的现金
+    cash_paid_related_to_other_investing_activities = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 投资活动产生的现金流量净额
+    net_cash_flows_from_investing_activities = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 吸收投资收到的现金
+    cash_from_capital_contributions = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 吸收权益性投资收到的现金
+    cash_from_capital_contributions_subsidiaries = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 其中: 子公司吸收少数股东投资收到的现金
+    cash_from_capital_contributions_minority = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 发行债券收到的现金
+    cash_received_from_issuing_bonds = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 取得借款收到的现金
+    cash_received_from_borrowings = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 收到其他与筹资活动有关的现金
+    cash_received_related_to_other_financing_activities = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 偿还债务支付的现金
+    cash_repayments_of_borrowings = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 分配股利、利润或偿付利息支付的现金
+    cash_for_dividends_profits_or_interests = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 其中: 子公司支付给少数股东的股利、利润
+    cash_for_dividends_profit_to_minority_shareholders = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 支付其他与筹资活动有关的现金
+    cash_related_to_other_financing_activities = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 筹资活动产生的现金流量净额
+    net_cash_flows_from_financing_activities = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 汇率变动对现金及现金等价物的影响
+    effect_of_foreign_exchange_rate_changes_on_cash = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 其他对现金的影响
+    effect_of_other_factors_on_cash = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 现金及现金等价物净增加额
+    net_gains_of_cash_and_cash_equivalents = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 期初现金及现金等价物余额
+    cash_begin = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 期末现金及现金等价物余额
+    cash_end = models.DecimalField(max_digits=20, decimal_places=3, default=0)
 
-#     # 净利润
-#     # 未确认的投资损失
-#     # 资产减值准备
-#     # 固定资产折旧、油气资产折耗、生产性生物资产折旧
-#     # 无形资产摊销
-#     # 长期待摊费用摊销
-#     # 处置固定资产、无形资产和其他长期资产的损失(收益以“－”号填列）
-#     # 固定资产报废损失(收益以“－”号填列）
-#     # 公允价值变动损失(收益以“－”号填列）
-#     # 财务费用(收益以“－”号填列）
-#     # 投资损失(收益以“－”号填列）
-#     # 递延所得税资产减少（增加以“－”号填列）
-#     # 递延所得税负债增加（减少以“－”号填列）
-#     # 存货的减少（增加以“－”号填列）
-#     # 经营性应收项目的减少（增加以“－”号填列）
-#     # 经营性应付项目的增加（减少以“－”号填列）
-#     # 其他
-#     # 经营活动产生的现金流量净额
-#     # 债务转为资本
-#     # 一年内到期的可转换公司债券
-#     # 融资租赁固定资产
-#     # 现金的期末余额
-#     # 现金的期初余额
-#     # 现金等价物的期末余额
-#     # 现金等价物的期初余额
-#     # 现金及现金等价物净增加额
-#     # 信用减值损失
+    def __str__(self):
+       return self.code + "@" + str(self.date)
 
-#    def __str__(self):
-#        return self.code + "@" + str(self.date)
+class CashflowSheetIndirect(models.Model):
+    # 证券代码
+    code = models.CharField(max_length=64, db_index=True)
+    # 会计期间
+    date = models.DateField(db_index=True)
+    # 净利润
+    net_profit = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 信用减值损失
+    credit_impairment_loss = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 未确认的投资损失
+    unrealized_investment_losses = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 资产减值准备
+    allocation_of_assets_impairment = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 固定资产折旧、油气资产折耗、生产性生物资产折旧
+    depreciations_of_assets = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 无形资产摊销
+    amortization_of_intangibles = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 长期待摊费用摊销
+    amortization_of_long_term_deferred_expenses = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 处置固定资产、无形资产和其他长期资产的损失(收益以“－”号填列）
+    loss_from_disposal_of_fixed_intangible_other_assets = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 固定资产报废损失(收益以“－”号填列）
+    loss_on_disposal_of_fixed_asset = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 公允价值变动损失(收益以“－”号填列）
+    loss_from_fair_value_change = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 财务费用(收益以“－”号填列）
+    finance_charge = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 投资损失(收益以“－”号填列）
+    investment_loss = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 递延所得税资产减少（增加以“－”号填列）
+    decrease_of_deferred_tax_assets = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 递延所得税负债增加（减少以“－”号填列）
+    increase_of_deferred_tax_assets = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 存货的减少（增加以“－”号填列）
+    decrease_of_inventories = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 经营性应收项目的减少（增加以“－”号填列）
+    decrease_of_receivables_in_operating = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 经营性应付项目的增加（减少以“－”号填列）
+    increase_of_receivables_in_operating = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 其他
+    other = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 经营活动产生的现金流量净额
+    net_cash_flows_from_operating_activities = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 债务转为资本
+    conversion_of_debt_into_capital = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 一年内到期的可转换公司债券
+    convertible_bonds_maturing_within_one_year = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 融资租赁固定资产
+    financial_leased_fixed_assets = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 现金的期末余额
+    cash_end = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 现金的期初余额
+    cash_begin = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 现金等价物的期末余额
+    cash_equivalents_end = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 现金等价物的期初余额
+    cash_equivalents_begin = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 现金及现金等价物净增加额
+    net_gains_of_cash_and_cash_equivalents = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+
+    def __str__(self):
+       return self.code + "@" + str(self.date)
