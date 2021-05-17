@@ -4,7 +4,7 @@ class BalanceSheet(models.Model):
     # 证券代码
     code = models.CharField(max_length=64, db_index=True)
     # 会计期间
-    date = models.DateField(db_index=True)
+    date = models.DateField()
     # 货币资金
     cash_equivalent = models.DecimalField(max_digits=20, decimal_places=3, default=0)
     # 其中:客户资金存款
@@ -257,11 +257,16 @@ class BalanceSheet(models.Model):
     def __str__(self):
         return self.code + "@" + str(self.date)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=("code", "date"), name="balance_sheet_unique_code_date")
+        ]
+
 class IncomeSheet(models.Model):
     # 证券代码
     code = models.CharField(max_length=64, db_index=True)
     # 会计期间
-    date = models.DateField(db_index=True)
+    date = models.DateField()
     # 营业总收入
     total_revenue = models.DecimalField(max_digits=20, decimal_places=3, default=0)
     #   营业收入
@@ -397,6 +402,11 @@ class IncomeSheet(models.Model):
     # 归属于母公司其他权益工具持有者的净利润
     net_income_to_other_equity_instruments_holder = models.DecimalField(max_digits=20, decimal_places=3, default=0)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=("code", "date"), name="income_sheet_unique_code_date")
+        ]
+
     def __str__(self):
         return self.code + "@" + str(self.date)
 
@@ -404,7 +414,7 @@ class CashflowSheetDirect(models.Model):
     # 证券代码
     code = models.CharField(max_length=64, db_index=True)
     # 会计期间
-    date = models.DateField(db_index=True)
+    date = models.DateField()
     # 销售商品、提供劳务收到的现金
     cash_receipts_from_customers = models.DecimalField(max_digits=20, decimal_places=3, default=0)
     # 客户存款和同业存放款项净增加额
@@ -506,6 +516,11 @@ class CashflowSheetDirect(models.Model):
     # 期末现金及现金等价物余额
     cash_end = models.DecimalField(max_digits=20, decimal_places=3, default=0)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=("code", "date"), name="cashflow_sheet_unique_code_date")
+        ]
+
     def __str__(self):
        return self.code + "@" + str(self.date)
 
@@ -513,7 +528,7 @@ class CashflowSheetIndirect(models.Model):
     # 证券代码
     code = models.CharField(max_length=64, db_index=True)
     # 会计期间
-    date = models.DateField(db_index=True)
+    date = models.DateField()
     # 净利润
     net_profit = models.DecimalField(max_digits=20, decimal_places=3, default=0)
     # 信用减值损失
@@ -568,6 +583,11 @@ class CashflowSheetIndirect(models.Model):
     cash_equivalents_begin = models.DecimalField(max_digits=20, decimal_places=3, default=0)
     # 现金及现金等价物净增加额
     net_gains_of_cash_and_cash_equivalents = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=("code", "date"), name="cashflow_sheet_indirect_unique_code_date")
+        ]
 
     def __str__(self):
        return self.code + "@" + str(self.date)

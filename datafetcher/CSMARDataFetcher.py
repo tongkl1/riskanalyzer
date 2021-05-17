@@ -8,12 +8,12 @@ from tqdm import tqdm
 from urllib3.exceptions import InsecureRequestWarning
 import warnings
 
-from .BaseDataFetcher import BaseDataFetcher
+from .DataFetcher import DataFetcher
 from .models import SheetTracker
 from api.csmarapi.CsmarService import CsmarService
 from data.models import BalanceSheet, IncomeSheet, CashflowSheetDirect, CashflowSheetIndirect
 
-class CSMARDataFetcher(BaseDataFetcher):
+class CSMARDataFetcher(DataFetcher):
     # 静默未来版本警告, 该警告来源于NumPy的bug
     warnings.simplefilter(action='ignore', category=FutureWarning)
     # 静默http不安全警告 (垃圾国泰安)
@@ -186,7 +186,7 @@ class CSMARDataFetcher(BaseDataFetcher):
 
         balance_sheet = self.download_data('FS_Combas', self.balance_sheet_fields, 'Typrep="A" and Stkcd=' + code)
         balance_sheet = balance_sheet.loc[balance_sheet['Typrep'] == 'A']
-        balance_sheet['Accper'] = pd.to_datetime(balance_sheet['Accper'])
+        balance_sheet['Accper'] = pd.to_datetime(balance_sheet['Accper']).dt.date
         balance_sheet = balance_sheet.replace([None], 0).replace(np.nan, 0)
         balance_sheet['A002126000'] += balance_sheet['A002127000']
 
@@ -207,7 +207,7 @@ class CSMARDataFetcher(BaseDataFetcher):
 
         income_sheet = self.download_data('FS_Comins', self.income_sheet_fields, 'Typrep="A" and Stkcd=' + code)
         income_sheet = income_sheet.loc[income_sheet['Typrep'] == 'A']
-        income_sheet['Accper'] = pd.to_datetime(income_sheet['Accper'])
+        income_sheet['Accper'] = pd.to_datetime(income_sheet['Accper']).dt.date
         income_sheet = income_sheet.replace([None], 0).replace(np.nan, 0)
 
         entry_list = []
@@ -227,7 +227,7 @@ class CSMARDataFetcher(BaseDataFetcher):
 
         cashflow_sheet = self.download_data('FS_Comscfd', self.cashflow_sheet_fields, 'Typrep="A" and Stkcd=' + code)
         cashflow_sheet = cashflow_sheet.loc[cashflow_sheet['Typrep'] == 'A']
-        cashflow_sheet['Accper'] = pd.to_datetime(cashflow_sheet['Accper'])
+        cashflow_sheet['Accper'] = pd.to_datetime(cashflow_sheet['Accper']).dt.date
         cashflow_sheet = cashflow_sheet.replace([None], 0).replace(np.nan, 0)
 
         entry_list = []
@@ -247,7 +247,7 @@ class CSMARDataFetcher(BaseDataFetcher):
 
         cashflow_sheet_indirect = self.download_data('FS_Comscfi', self.cashflow_sheet_indirect_fields, 'Typrep="A" and Stkcd=' + code)
         cashflow_sheet_indirect = cashflow_sheet_indirect.loc[cashflow_sheet_indirect['Typrep'] == 'A']
-        cashflow_sheet_indirect['Accper'] = pd.to_datetime(cashflow_sheet_indirect['Accper'])
+        cashflow_sheet_indirect['Accper'] = pd.to_datetime(cashflow_sheet_indirect['Accper']).dt.date
         cashflow_sheet_indirect = cashflow_sheet_indirect.replace([None], 0).replace(np.nan, 0)
 
         entry_list = []
@@ -288,7 +288,7 @@ class CSMARDataFetcher(BaseDataFetcher):
         else:
             balance_sheet = self.download_data('FS_Combas', self.balance_sheet_fields, 'Typrep="A"')
             balance_sheet = balance_sheet.loc[balance_sheet['Typrep'] == 'A'] # 再次确保没有母公司报表混入
-            balance_sheet['Accper'] = pd.to_datetime(balance_sheet['Accper'])
+            balance_sheet['Accper'] = pd.to_datetime(balance_sheet['Accper']).dt.date
             balance_sheet = balance_sheet.replace([None], 0).replace(np.nan, 0)
             balance_sheet['A002126000'] += balance_sheet['A002127000'] # 处理国泰安的一项录入错误
             balance_sheet.to_pickle(os.path.join('datafetcher', self.temp_data_path, 'balance_sheet.pickle'))
@@ -297,7 +297,6 @@ class CSMARDataFetcher(BaseDataFetcher):
         now = datetime.now()
         entry_list = []
         to_update = set()
-        update_list = []
         bar = tqdm(desc='Process Progress', total=balance_sheet.shape[0])
         code_date_list = set([(x[0], x[1]) for x in BalanceSheet.objects.all().values_list('code', 'date')])
         for _, row in balance_sheet.iterrows():
@@ -322,7 +321,7 @@ class CSMARDataFetcher(BaseDataFetcher):
         else:
             income_sheet = self.download_data('FS_Comins', self.income_sheet_fields, 'Typrep="A"')
             income_sheet = income_sheet.loc[income_sheet['Typrep'] == 'A'] # 再次确保没有母公司报表混入
-            income_sheet['Accper'] = pd.to_datetime(income_sheet['Accper'])
+            income_sheet['Accper'] = pd.to_datetime(income_sheet['Accper']).dt.date
             income_sheet = income_sheet.replace([None], 0).replace(np.nan, 0)
             income_sheet.to_pickle(os.path.join('datafetcher', self.temp_data_path, 'income_sheet.pickle'))
 
@@ -351,7 +350,7 @@ class CSMARDataFetcher(BaseDataFetcher):
         else:
             cashflow_sheet = self.download_data('FS_Comscfd', self.cashflow_sheet_fields, 'Typrep="A"')
             cashflow_sheet = cashflow_sheet.loc[cashflow_sheet['Typrep'] == 'A'] # 再次确保没有母公司报表混入
-            cashflow_sheet['Accper'] = pd.to_datetime(cashflow_sheet['Accper'])
+            cashflow_sheet['Accper'] = pd.to_datetime(cashflow_sheet['Accper']).dt.date
             cashflow_sheet = cashflow_sheet.replace([None], 0).replace(np.nan, 0)
             cashflow_sheet.to_pickle(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet.pickle'))
 
@@ -380,7 +379,7 @@ class CSMARDataFetcher(BaseDataFetcher):
         else:
             cashflow_sheet_indirect = self.download_data('FS_Comscfi', self.cashflow_sheet_indirect_fields, 'Typrep="A"')
             cashflow_sheet_indirect = cashflow_sheet_indirect.loc[cashflow_sheet_indirect['Typrep'] == 'A'] # 再次确保没有母公司报表混入
-            cashflow_sheet_indirect['Accper'] = pd.to_datetime(cashflow_sheet_indirect['Accper'])
+            cashflow_sheet_indirect['Accper'] = pd.to_datetime(cashflow_sheet_indirect['Accper']).dt.date
             cashflow_sheet_indirect = cashflow_sheet_indirect.replace([None], 0).replace(np.nan, 0)
             cashflow_sheet_indirect.to_pickle(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet_indirect.pickle'))
 
@@ -403,6 +402,7 @@ class CSMARDataFetcher(BaseDataFetcher):
             CashflowSheetIndirect.objects.bulk_create(entry_list, batch_size=10000)
 
         balance_sheet = balance_sheet.sort_values(by=['Stkcd', 'Accper']).groupby('Stkcd').last()['Accper']
+        update_list = []
         if len(to_update) > 0:
             for item in to_update:
                 try:

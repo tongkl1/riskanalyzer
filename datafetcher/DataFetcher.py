@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-class BaseDataFetcher(metaclass=ABCMeta):
+class DataFetcher(metaclass=ABCMeta):
     def __init__(self):
         pass
 
