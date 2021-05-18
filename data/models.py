@@ -1,5 +1,37 @@
 from django.db import models
 
+class BasicInformation(models.Model):
+    # 证券代码
+    code = models.CharField(max_length=64, primary_key=True)
+    # 证券简称
+    name = models.CharField(max_length=64)
+    # 公司全称
+    full_name = models.CharField(max_length=256)
+    # 行业代码
+    industry_code = models.CharField(max_length=5)
+    # 行业名称
+    industry_name = models.CharField(max_length=64)
+    # 上市日期
+    list_date = models.DateField()
+
+    # 交易状态
+    NORMAL = 'A'
+    DELISTED = 'D'
+    SUSPEND_LISTING = 'S'
+    SUSPEND_TRADING = 'N'
+
+    LIST_STATUS_CHOICES = [
+        (NORMAL, '正常交易'),
+        (DELISTED, '终止上市'),
+        (SUSPEND_LISTING, '暂停上市'),
+        (SUSPEND_TRADING, '停牌'),
+    ]
+
+    list_status = models.CharField(max_length=2, choices=LIST_STATUS_CHOICES, default=NORMAL)
+
+    def __str__(self):
+       return self.code + " " + self.name
+
 class BalanceSheet(models.Model):
     # 证券代码
     code = models.CharField(max_length=64, db_index=True)
@@ -587,6 +619,60 @@ class CashflowSheetIndirect(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=("code", "date"), name="cashflow_sheet_indirect_unique_code_date")
+        ]
+
+    def __str__(self):
+       return self.code + "@" + str(self.date)
+
+class ReportAudit(models.Model):
+    # 证券代码
+    code = models.CharField(max_length=64, db_index=True)
+    # 会计期间
+    date = models.DateField()
+
+    # 审计意见类型
+    UNQUALIFIED = 1
+    QUALIFIED = 2
+    ADVERSE = 3
+    DISCLAIMER = 4
+    UNQUALIFIED_WITH_NOTES = 5
+    QUALIFIED_WITH_NOTES = 6
+    ADVERSE_WITH_NOTES = 7
+    NONE = -1
+
+    AUDIT_TYPE_CHOICES = [
+        (UNQUALIFIED, '标准无保留意见'),
+        (QUALIFIED, '保留意见'),
+        (ADVERSE, '否定意见'),
+        (DISCLAIMER, '无法发表意见'),
+        (UNQUALIFIED_WITH_NOTES, '无保留意见加事项段'),
+        (QUALIFIED_WITH_NOTES, '保留意见加事项段'),
+        (ADVERSE_WITH_NOTES, '否定意见加说明段'),
+        (NONE, '未经审计')
+    ]
+
+    AUDIT_TYPE_MAPPING = {
+        '标准无保留意见': 1,
+        '保留意见': 2,
+        '否定意见': 3,
+        '无法发表意见': 4,
+        '拒绝发表意见': 4,
+        '无保留意见加事项段': 5,
+        '无保留意见加说明段': 5,
+        '保留意见加事项段': 6,
+        '保留意见加说明段': 6,
+        '否定意见加说明段': 7,
+        '': -1
+    }
+
+    audit_type = models.IntegerField(choices=AUDIT_TYPE_CHOICES, default=UNQUALIFIED)
+
+    # 审计意见
+    audit_remark = models.CharField(max_length=10000, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=("code", "date"), name="report_audit_unique_code_date")
         ]
 
     def __str__(self):

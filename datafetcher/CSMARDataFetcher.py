@@ -11,7 +11,7 @@ import warnings
 from .DataFetcher import DataFetcher
 from .models import SheetTracker
 from api.csmarapi.CsmarService import CsmarService
-from data.models import BalanceSheet, IncomeSheet, CashflowSheetDirect, CashflowSheetIndirect
+from data.models import *
 
 class CSMARDataFetcher(DataFetcher):
     # 静默未来版本警告, 该警告来源于NumPy的bug
@@ -262,6 +262,45 @@ class CSMARDataFetcher(DataFetcher):
 
         if len(entry_list) > 0:
             CashflowSheetIndirect.objects.bulk_create(entry_list)
+        
+        print('Fetching Basic Information')
+
+        basic_information = self.download_data('TRD_Co', ['Stkcd', 'Stknme', 'Conme', 'Nnindcd',
+            'Nnindnme', 'Listdt', 'Statco'], 'Stkcd=' + code)
+        basic_information['Listdt'] = pd.to_datetime(basic_information['Listdt']).dt.date
+        basic_information = basic_information.replace([None], '').replace(np.nan, '')
+
+        BasicInformation.objects.all().delete() # 基本信息不需要差额更新, 而是总是全部重新获取
+        entry_list = []
+        for _, row in basic_information.iterrows():
+            entry = BasicInformation(code=row['Stkcd'], name=row['Stknme'], full_name=row['Conme'],
+                industry_code=row['Nnindcd'], industry_name=row['Nnindnme'],
+                list_date=row['Listdt'], list_status=row['Statco'])
+            entry_list.append(entry)
+
+        print('Updating database')
+        if len(entry_list) > 0:
+            BasicInformation.objects.bulk_create(entry_list, batch_size=10000)
+        
+        print('Fetching Report Audit')
+
+        report_audit = self.download_data('FIN_Audit', ['Stkcd', 'Accper', 'Audittyp'], 'Stkcd=' + code)
+        report_audit['Accper'] = pd.to_datetime(report_audit['Accper']).dt.date
+        report_audit = report_audit.replace([None], '').replace(np.nan, '')
+
+        entry_list = []
+        for _, row in report_audit.iterrows():
+            code = row['Stkcd']
+            date = row['Accper']
+            if not ReportAudit.objects.filter(code=code, date=date).exists():
+                # 垃圾国泰安的数据库有个重大bug: 它无法返回类型为Ntext的字段, 因此我无法通过数据接口获取具体审计意见, 只能暂时留空
+                # 真有你的, CSMAR
+                entry = ReportAudit(code=code, date=date, audit_type=ReportAudit.AUDIT_TYPE_MAPPING[row['Audittyp']])
+                entry_list.append(entry)
+
+        print('Updating database')
+        if len(entry_list) > 0:
+            ReportAudit.objects.bulk_create(entry_list, batch_size=10000)
 
         # 更新SheetTracker的信息
         try:
@@ -414,6 +453,78 @@ class CSMARDataFetcher(DataFetcher):
                     pass
         SheetTracker.objects.bulk_update(update_list, ['last_update', 'last_accounting_period'], batch_size=10000)
 
+        print('Fetching Basic Information')
+
+        if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'basic_information.pickle')):
+            basic_information = pd.read_pickle(os.path.join('datafetcher', self.temp_data_path, 'basic_information.pickle'))
+        else:
+            basic_information = self.download_data('TRD_Co', ['Stkcd', 'Stknme', 'Conme', 'Nnindcd',
+                'Nnindnme', 'Listdt', 'Statco'])
+            basic_information['Listdt'] = pd.to_datetime(basic_information['Listdt']).dt.date
+            basic_information = basic_information.replace([None], '').replace(np.nan, '')
+            basic_information.to_pickle(os.path.join('datafetcher', self.temp_data_path, 'basic_information.pickle'))
+
+        code_list = set([x[0] for x in SheetTracker.objects.all().values_list('code')])
+        BasicInformation.objects.all().delete() # 基本信息不需要差额更新, 而是总是全部重新获取
+        entry_list = []
+        bar = tqdm(desc='Process Progress', total=basic_information.shape[0])
+        for _, row in basic_information.iterrows():
+            code = row['Stkcd']
+            bar.update(1)
+            if code in code_list:
+                entry = BasicInformation(code=code, name=row['Stknme'], full_name=row['Conme'],
+                    industry_code=row['Nnindcd'], industry_name=row['Nnindnme'],
+                    list_date=row['Listdt'], list_status=row['Statco'])
+                entry_list.append(entry)
+
+        bar.close()
+        print('Updating database')
+        if len(entry_list) > 0:
+            BasicInformation.objects.bulk_create(entry_list, batch_size=10000)
+        
+        print('Fetching Report Audit')
+
+        if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'report_audit.pickle')):
+            report_audit = pd.read_pickle(os.path.join('datafetcher', self.temp_data_path, 'report_audit.pickle'))
+        else:
+            report_audit = self.download_data('FIN_Audit', ['Stkcd', 'Accper', 'Audittyp'])
+            report_audit['Accper'] = pd.to_datetime(report_audit['Accper']).dt.date
+            report_audit = report_audit.replace([None], '').replace(np.nan, '')
+            report_audit.to_pickle(os.path.join('datafetcher', self.temp_data_path, 'report_audit.pickle'))
+
+        code_list = set([x[0] for x in SheetTracker.objects.all().values_list('code')])
+        entry_list = []
+        bar = tqdm(desc='Process Progress', total=report_audit.shape[0])
+        code_date_list = set([(x[0], x[1]) for x in ReportAudit.objects.all().values_list('code', 'date')])
+        for _, row in report_audit.iterrows():
+            code = row['Stkcd']
+            date = row['Accper']
+            bar.update(1)
+            if code in code_list and (code, date) not in code_date_list:
+                # 垃圾国泰安的数据库有个重大bug: 它无法返回类型为Ntext的字段, 因此我无法通过数据接口获取具体审计意见, 只能暂时留空
+                # 真有你的, CSMAR
+                entry = ReportAudit(code=code, date=date, audit_type=ReportAudit.AUDIT_TYPE_MAPPING[row['Audittyp']])
+                entry_list.append(entry)
+                to_update.add(code)
+
+        bar.close()
+        print('Updating database')
+        if len(entry_list) > 0:
+            ReportAudit.objects.bulk_create(entry_list, batch_size=10000)
+
+        balance_sheet = balance_sheet.sort_values(by=['Stkcd', 'Accper']).groupby('Stkcd').last()['Accper']
+        update_list = []
+        if len(to_update) > 0:
+            for item in to_update:
+                try:
+                    obj = SheetTracker.objects.get(pk=item)
+                    obj.last_update = make_aware(now)
+                    obj.last_accounting_period = balance_sheet.loc[item]
+                    update_list.append(obj)
+                except:
+                    pass
+        SheetTracker.objects.bulk_update(update_list, ['last_update', 'last_accounting_period'], batch_size=10000)
+
         if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'balance_sheet.pickle')):
             os.remove(os.path.join('datafetcher', self.temp_data_path, 'balance_sheet.pickle'))
         if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'income_sheet.pickle')):
@@ -422,6 +533,10 @@ class CSMARDataFetcher(DataFetcher):
             os.remove(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet.pickle'))
         if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet_indirect.pickle')):
             os.remove(os.path.join('datafetcher', self.temp_data_path, 'cashflow_sheet_indirect.pickle'))
+        if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'basic_information.pickle')):
+            os.remove(os.path.join('datafetcher', self.temp_data_path, 'basic_information.pickle'))
+        if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'report_audit.pickle')):
+            os.remove(os.path.join('datafetcher', self.temp_data_path, 'report_audit.pickle'))
 
     @staticmethod
     def time_delta(currentDate: str, days: int) -> str:

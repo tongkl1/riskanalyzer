@@ -7,6 +7,7 @@ migrations
 # csmar-api temp file
 /csmar-log.log
 /token.txt
+/signcode.txt
 
 # temp download file
 /datafetcher/temp
