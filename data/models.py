@@ -409,6 +409,10 @@ class IncomeSheet(models.Model):
     net_profit = models.DecimalField(max_digits=20, decimal_places=3, default=0)
     # 归属于母公司所有者的净利润
     net_income_attributable_to_shareholders = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 非经常性损益
+    non_recurrent_gain = models.DecimalField(max_digits=20, decimal_places=3, default=0)
+    # 归属于母公司所有者的扣除非经常性损益的净利润
+    net_income_less_non_recurrent_gain = models.DecimalField(max_digits=20, decimal_places=3, default=0)
     # 少数股东损益
     gains_losses_attributable_to_minority_interests = models.DecimalField(max_digits=20, decimal_places=3, default=0)
     # 基本每股收益

@@ -206,6 +206,8 @@ class CSMARDataFetcher(DataFetcher):
         print('Fetching Income Sheets')
 
         income_sheet = self.download_data('FS_Comins', self.income_sheet_fields, 'Typrep="A" and Stkcd=' + code)
+        income_sheet_extra = self.download_data('FI_T2', ['Stkcd', 'Accper', 'F020101', 'F020102'], 'Stkcd=' + code)
+        income_sheet = pd.merge(income_sheet, income_sheet_extra, how='left', on=['Stkcd', 'Accper'])
         income_sheet = income_sheet.loc[income_sheet['Typrep'] == 'A']
         income_sheet['Accper'] = pd.to_datetime(income_sheet['Accper']).dt.date
         income_sheet = income_sheet.replace([None], 0).replace(np.nan, 0)
@@ -359,6 +361,8 @@ class CSMARDataFetcher(DataFetcher):
             income_sheet = pd.read_pickle(os.path.join('datafetcher', self.temp_data_path, 'income_sheet.pickle'))
         else:
             income_sheet = self.download_data('FS_Comins', self.income_sheet_fields, 'Typrep="A"')
+            income_sheet_extra = self.download_data('FI_T2', ['Stkcd', 'Accper', 'F020101', 'F020102'])
+            income_sheet = pd.merge(income_sheet, income_sheet_extra, how='left', on=['Stkcd', 'Accper'])
             income_sheet = income_sheet.loc[income_sheet['Typrep'] == 'A'] # 再次确保没有母公司报表混入
             income_sheet['Accper'] = pd.to_datetime(income_sheet['Accper']).dt.date
             income_sheet = income_sheet.replace([None], 0).replace(np.nan, 0)
