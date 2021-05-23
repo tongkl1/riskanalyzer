@@ -17,14 +17,14 @@ class ReportUtil(object):
         '''
         try:
             if type(dataList).__name__!='list' or len(dataList)==0:
-                return 
+                return
             listKeys = [i for i in dataList[0].keys()]
             tb = pt.PrettyTable()
             tb.field_names = listKeys
             for j in dataList:
                 listValues = [i for i in j.values()]
                 tb.add_row(listValues)
-                
+
             print(tb)
         except BaseException as e:
             print(e)

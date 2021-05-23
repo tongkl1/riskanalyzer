@@ -61,7 +61,7 @@ class CSMARDataFetcher(DataFetcher):
         self.end_date = datetime.now().strftime('%Y-%m-%d')
         self.start_date = '1980-01-01'
         self.bar = None
-    
+
     def __del__(self):
         super().__del__()
         CSMARDataFetcher.connection_count -= 1
@@ -82,7 +82,7 @@ class CSMARDataFetcher(DataFetcher):
             self.csmar.login(self.username, self.pwd)
             CSMARDataFetcher.login = True
         return self.get_CSMAR_data(table_name, field_list, self.start_date, self.end_date, condition)
-    
+
     def get_CSMAR_data(self, table_name : str, field_list : str, start_date : str, end_date : str, condition : str = '') -> pd.DataFrame:
         count = self.query_count(field_list, table_name, start_date, end_date, condition)
 
@@ -125,7 +125,7 @@ class CSMARDataFetcher(DataFetcher):
             os.remove(os.path.join('datafetcher', self.temp_data_path, table_name + '_date.txt'))
 
         return res.reset_index(drop=True)
-    
+
     def query(self, table_name : str, field_list : str, start_date : str, end_date : str, condition : str = '') -> list:
         count = self.csmar.queryCount(field_list, condition, table_name, start_date, end_date)
         res = []
@@ -262,7 +262,7 @@ class CSMARDataFetcher(DataFetcher):
 
         if len(entry_list) > 0:
             CashflowSheetIndirect.objects.bulk_create(entry_list)
-        
+
         print('Fetching Basic Information')
 
         basic_information = self.download_data('TRD_Co', ['Stkcd', 'Stknme', 'Conme', 'Nnindcd',
@@ -281,7 +281,7 @@ class CSMARDataFetcher(DataFetcher):
         print('Updating database')
         if len(entry_list) > 0:
             BasicInformation.objects.bulk_create(entry_list, batch_size=10000)
-        
+
         print('Fetching Report Audit')
 
         report_audit = self.download_data('FIN_Audit', ['Stkcd', 'Accper', 'Audittyp'], 'Stkcd=' + code)
@@ -310,7 +310,7 @@ class CSMARDataFetcher(DataFetcher):
             to_update.save()
         except:
             pass
-    
+
     def fetch_all(self):
         '''
         拉取所有股票的财务数据
@@ -481,7 +481,7 @@ class CSMARDataFetcher(DataFetcher):
         print('Updating database')
         if len(entry_list) > 0:
             BasicInformation.objects.bulk_create(entry_list, batch_size=10000)
-        
+
         print('Fetching Report Audit')
 
         if os.path.exists(os.path.join('datafetcher', self.temp_data_path, 'report_audit.pickle')):

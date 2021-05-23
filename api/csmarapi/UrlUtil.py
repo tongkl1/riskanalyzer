@@ -27,22 +27,22 @@ class UrlUtil(object):
         self.__queryCountUrl=config.get('url','query.queryCountUrl')
         self.__websocketUrl=config.get('url','query.websocketUrl')
         self.__version=config.get('url','conf.version')
-        
+
     def getListDbsUrl(self):
         return self.__listDbsUrl
-    
+
     def getLoginUrl(self):
         return self.__loginUrl
-    
+
     def getListFieldsUrl(self):
         return self.__listFieldsUrl
-    
+
     def getListTablesUrl(self):
         return self.__listTablesUrl
-    
+
     def getPreviewUrl(self):
         return self.__previewUrl
-    
+
     def getPackResultUrl(self):
         return self.__packResultUrl
 

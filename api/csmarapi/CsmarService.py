@@ -17,7 +17,7 @@ import datetime
 from websocket import create_connection
 import sys
 class CsmarService(object):
-    
+
     '''
     csmarapi服务接口
     '''
@@ -25,7 +25,7 @@ class CsmarService(object):
         存放loadData方法解析的结果集
     '''
     dataList=[]
-    
+
     def __init__(self):
         '''
         Constructor
@@ -40,7 +40,7 @@ class CsmarService(object):
         fmt = logging.Formatter('%(asctime)s %(filename)s %(levelname)s %(message)s')
         fh.setFormatter(fmt)
         self.logger.handlers.append(fh)
-       
+
     def logon(self,account,pwd,lang='0',belong='0'):
         if type(account).__name__!='str' or type(pwd).__name__!='str':
             self.logger.error('Parameter type error')
@@ -50,23 +50,23 @@ class CsmarService(object):
         body = json.dumps(encodedArgs).encode('utf-8')
         headers={'Content-Type': 'application/json','lang': lang,'belong': belong}
         return self.doPost(targetUrl,body=body,headers=headers)
-    
+
     def getToken(self,account,pwd):
         loginInfo = self.logon(account, pwd)
         return loginInfo['data']['token']
-    
+
     def login(self,account,pwd,lang='0',belong='0'):
         '''
                     函数功能：用户登录信息以及语言设置写入文件
-                    
+
                     参数：
-        
+
            account(str)：账号
-           
+
            pwd(str)：密码
-           
-           __lang(str)：语言:简体":"0","英文":"1","繁体":"2"  
-           
+
+           __lang(str)：语言:简体":"0","英文":"1","繁体":"2"
+
                     返回值：无
         '''
         if lang not in ['0','1','2']:
@@ -78,24 +78,24 @@ class CsmarService(object):
             self.logger.info(loginInfo['msg'])
             self.writeToken(loginInfo['data']['token'],lang,belong)
         else:
-            self.writeToken('',lang,belong)          
-        
-        
+            self.writeToken('',lang,belong)
+
+
     def getTokenFromFile(self):
-        fo = open('token.txt','r') 
+        fo = open('token.txt','r')
         alist = fo.readlines()
         fo.close()
         if len(alist)==0:
             self.logger.error('The account has been offline, please sign in again.')
             return False
         return alist
-    
+
     def getListDbs(self):
         '''
                     函数功能：查看已购买的数据库列表
-                    
+
                     参数：无
-                    
+
                     返回值：json字符串
         '''
         targetUrl = self.urlUtil.getListDbsUrl()
@@ -105,13 +105,13 @@ class CsmarService(object):
         if dataDic['code']==0:
             dataList = dataDic['data']
             return dataList
-    
+
     def getListFields(self,tableName):
         '''
                     函数功能：查看数据表的字段列表
-                    
+
                     参数：无
-                    
+
                     返回值：json字符串
         '''
         if type(tableName).__name__!='str':
@@ -126,13 +126,13 @@ class CsmarService(object):
             dataList = dataDic['data']
             return dataList
 
-    
+
     def getListTables(self,databaseName):
         '''
                     函数功能：查看已购买的数据库表列表
-                    
+
                     参数：无
-                    
+
                     返回值：json字符串
         '''
         if type(databaseName).__name__!='str':
@@ -140,7 +140,7 @@ class CsmarService(object):
             return False
         #字符编码强制转换
         databaseName=parse.quote(databaseName)
-        
+
         targetUrl = self.urlUtil.getListTablesUrl()
         alist = self.getTokenFromFile()
         headers={'Lang': alist[1].strip('\n'),'Token':alist[0].strip('\n'),'belong':alist[2]}
@@ -149,16 +149,16 @@ class CsmarService(object):
         if dataDic['code']==0:
             dataList = dataDic['data']
             return dataList
-    
+
     def preview(self,tableName):
         '''
                     函数功能：查看已购买的数据库表列表
-                    
+
                     参数：
-                    
-            
+
+
             tableName(str)：表名称
-                    
+
                     返回值：json字符串
         '''
         if type(tableName).__name__!='str':
@@ -177,24 +177,24 @@ class CsmarService(object):
     def query(self,columns,condition,tableName,*_other_args):
         '''
                     函数功能：查询已购买的数据库表数据
-                    
+
                     参数：
-                    
+
             columns(list)：打包的字段
-            
+
             condition(str)：查询条件
-            
+
             tableName(str)：大包表名称
-            
+
             startTime(str)：开始时间
-            
+
             endTime(str)：结束时间
-                    
+
                     返回值：json字符串
         '''
         if type(columns).__name__!='list' or type(condition).__name__!='str'  or type(tableName).__name__!='str':
             self.logger.error('Parameter type error')
-            return 
+            return
         targetUrl = self.urlUtil.getQueryUrl()
         __http = urllib3.PoolManager()
         bodyDic={'columns': columns,'condition':condition,'table':tableName}
@@ -220,28 +220,28 @@ class CsmarService(object):
             dataList = dataDic['data']['previewDatas']
             return dataList
 
- 
+
     def queryCount(self,columns,condition,tableName,*_other_args):
         '''
                     函数功能：查询已购买的数据库表数据总数
-                    
+
                     参数：
-                    
+
             columns(list)：打包的字段
-            
+
             condition(str)：查询条件
-            
+
             tableName(str)：大包表名称
-            
+
             startTime(str)：开始时间
-            
+
             endTime(str)：结束时间
-                    
+
                     返回值：数据总数
         '''
         if type(columns).__name__!='list' or type(condition).__name__!='str'  or type(tableName).__name__!='str':
             self.logger.error('Parameter type error')
-            return   
+            return
         targetUrl = self.urlUtil.getQueryCountUrl()
         __http = urllib3.PoolManager()
         bodyDic={'columns': columns,'condition':condition,'table':tableName}
@@ -250,14 +250,14 @@ class CsmarService(object):
             if startTime!=None and len(startTime)!=0:
                 if not self.is_valid_date(startTime):
                     self.logger.error("Date format error, should be 'yyyy-MM-dd'")
-                    return 
+                    return
                 bodyDic['startTime']=startTime
         if _other_args!=None and len(_other_args)>=2:
             endTime=_other_args[1]
             if endTime!=None and len(endTime)!=0:
                 if not self.is_valid_date(endTime):
                     self.logger.error("Date format error, should be 'yyyy-MM-dd'")
-                    return 
+                    return
                 bodyDic['endTime']=endTime
         body =json.dumps(bodyDic).encode('utf-8')
         alist = self.getTokenFromFile()
@@ -267,32 +267,32 @@ class CsmarService(object):
             # self.logger.info('The total number of data obtained by condition is ' + str(dataDic['data']))
             return dataDic['data']
 
-        
-    
+
+
     def pack(self,columns,condition,tableName,*_other_args):
         '''
                     函数功能：向接口发送打包指令
-                    
+
                     参数：
-                    
+
             columns(list)：打包的字段
-            
+
             condition(str)：查询条件
-            
+
             startTime(str)：开始时间
-            
+
             endTime(str)：结束时间
-            
+
             tableName(str)：大包表名称
-            
+
                     返回值：json字符串
         '''
         if type(columns).__name__!='list' or type(condition).__name__!='str'  or type(tableName).__name__!='str':
             self.logger.error('Parameter type error')
-            return 
+            return
         #字符编码强制转换
         #condition=parse.quote(condition)
-        
+
         targetUrl = self.urlUtil.getPackUrl()
         __http = urllib3.PoolManager()
         bodyDic={'columns': columns,'condition':condition,'table':tableName}
@@ -315,26 +315,26 @@ class CsmarService(object):
         alist = self.getTokenFromFile()
         headers={'Lang': alist[1].strip('\n'),'Token':alist[0].strip('\n'),'Content-Type': 'application/json'}
         return self.doPost(targetUrl,body=body,headers=headers)
-    
+
     def packSignCodeWriteToFile(self,columns,condition,tableName,*_other_args):
         '''
                     函数功能：获取打包结果的状态码写入本地文件
-                    
+
                     参数：
-                    
+
             columns(list)：打包的字段
-            
+
             condition(str)：查询条件
-            
+
             startTime(str)：开始时间
-            
+
             endTime(str)：结束时间
-            
+
             tableName(str)：大包表名称
-            
+
                     返回值：打包结果的状态码
         '''
-        
+
         if type(columns).__name__!='list' or type(condition).__name__!='str'  or type(tableName).__name__!='str':
             self.logger.error('Parameter type error')
             return False
@@ -347,15 +347,15 @@ class CsmarService(object):
             self.logger.info('packaging return code：signCode='+signCode)
             return signCode
         return False
-    
+
     def getPackResultBySignCode(self,signCode):
         '''
                     函数功能：获取服务器上面的打包文件
-                    
+
                     参数：
-                    
+
             signCode(str)：获取打包结果的状态码
-            
+
                     返回值：json字符串
         '''
         if type(signCode).__name__!='str':
@@ -366,10 +366,10 @@ class CsmarService(object):
         headers={'Lang': alist[1].strip('\n'),'Token':alist[0].strip('\n'),'belong':alist[2]}
         listFieldsUrl=targetUrl+'/'+signCode
         return self.doGet(listFieldsUrl, headers=headers)
-    
+
     def getSignCodeFromFile(self):
         try:
-            fo = open('signCode.txt','r') 
+            fo = open('signCode.txt','r')
             signCode = fo.read()
             fo.close()
         except FileNotFoundError  as err:
@@ -380,31 +380,31 @@ class CsmarService(object):
             return None
         self.logger.info('打包返回码：signCode='+signCode)
         return signCode
-    
-    
+
+
     def getPackResult(self,columns,condition,tableName,*_other_args):
         '''
                     函数功能：发送打包指令成功之后，每10秒向接口发送获取服务器上面的打包文件的请求，直到返回状态status等于1，说明打包成功
-                    
+
                     返回打包文件的下载地址filePath，函数会自动下载到默认文件夹c:\\csmardata\\zip\\下面
-                    
+
                     参数：
-        
+
             columns(list)：打包的字段
-            
+
             condition(str)：查询条件
-            
+
             startTime(str)：开始时间
-            
+
             endTime(str)：结束时间
-            
+
             tableName(str)：大包表名称
-        
+
                     返回值：json字符串
         '''
         #字符编码强制转换
         #condition=parse.quote(condition)
-        
+
         signCode = self.packSignCodeWriteToFile(columns,condition,tableName,*_other_args)
         if signCode==False:
             self.logger.error('Failed to get the packaging return code [signCode]')
@@ -438,29 +438,29 @@ class CsmarService(object):
     def getPackResultExt(self,columns,condition,tableName,*_other_args):
         '''
                     函数功能：发送打包指令成功之后，每10秒向接口发送获取服务器上面的打包文件的请求，直到返回状态status等于1，说明打包成功
-                    
+
                     返回打包文件的下载地址filePath，函数会自动下载到默认文件夹c:\\csmardata\\zip\\下面
-                    
+
                     参数：
-        
+
             columns(list)：打包的字段
-            
+
             condition(str)：查询条件
-            
+
             startTime(str)：开始时间
-            
+
             endTime(str)：结束时间
-            
+
             tableName(str)：大包表名称
-        
+
                     返回值：json字符串
         '''
         #字符编码强制转换
         #condition=parse.quote(condition)
-        
+
         signCode = self.packSignCodeWriteToFile(columns,condition,tableName,*_other_args)
         if signCode==False:
-            return 
+            return
         ws = create_connection(self.urlUtil.getWebsocketUrl())
         tokenList = self.getTokenFromFile()
         token = tokenList[0].strip('\n')
@@ -498,16 +498,16 @@ class CsmarService(object):
                 self.logger.info('An exception occurred during file packaging,please check the query criteria')
                 break
             else:
-                self.process_bar(packResult['data']['percentage'])          
-    
+                self.process_bar(packResult['data']['percentage'])
+
     def unzipSingle(self,fileName):
         '''
                     函数功能：解压单个文件到默认文件夹c:\\csmardata\\
-                    
+
                     参数：
-        
+
            fileName(str)：完整文件名称fileName。例如C:\\csmardata\\zip\\662348367897071616.zip
-           
+
                     返回值：无
         '''
         #解压单个文件到默认文件夹c:\\csmardata\\
@@ -520,24 +520,24 @@ class CsmarService(object):
             self.logger.info('The file has been successfully extracted to the directory:'+destDir)
         except RuntimeError as e:
             self.logger.error(e)
-        zf.close()   
-    
+        zf.close()
+
     def loadData(self,fileName,count=10000):
         '''
                     函数功能：解析的csv文件，把结果存入dataList。例如C:\\csmardata\\BETA_Ybeta.csv
-                    
+
                     参数：
-        
+
            fileName(str)：完整文件名称fileName。例如C:\\csmardata\\BETA_Ybeta.csv
-           
+
            count(int)：截取的记录数
-           
+
                     返回值：无
         '''
         if fileName.endswith('.csv')==False:
             self.logger.error('Wrong file type that needs to be resolved')
             return False
-            
+
         if type(fileName).__name__!='str' or type(count).__name__!='int':
             self.logger.error('Parameter type error')
             return False
@@ -554,18 +554,18 @@ class CsmarService(object):
                 if count!=None and i==count:
                     self.logger.info(tempList )
                     break
-                else: 
+                else:
                     self.logger.info(tempList )
-        
+
         return self.dataList
-        
-    #由于需求调整，该功能合并到loadData里面去了。   
+
+    #由于需求调整，该功能合并到loadData里面去了。
     def getDataList(self):
         '''
                     函数功能：返回loadData方法解析的结果集
-                    
+
                     参数：无
-                    
+
                     返回值：dataList
         '''
         return self.dataList
@@ -600,7 +600,7 @@ class CsmarService(object):
         elif dataDic['code']==-1:
             self.logger.error("System error.")
         elif dataDic['code']==0:
-            return dataDic 
+            return dataDic
         else:
             self.logger.error(dataDic['msg'])
         return dataDic
@@ -614,7 +614,7 @@ class CsmarService(object):
         elif dataDic['code']==-1:
             self.logger.error("System error.")
         elif dataDic['code']==0:
-            return dataDic 
+            return dataDic
         else:
             self.logger.error(dataDic['msg'])
         return dataDic
